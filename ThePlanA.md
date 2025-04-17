@@ -1,5 +1,3 @@
-# ThePlanRedux.md
-
 # Project Overview
 
 This development plan outlines the implementation of a secure, scalable full-stack application using Next.js. The system will feature a GraphQL API backend (integrated within Next.js API routes) managing users, organizations, applications, and subscriptions. It will leverage Prisma for database interactions, NextAuth.js for robust authentication and session management, and integrated API routes for logging. The goal is a flexible, maintainable system with role-based access control and third-party integrations.
