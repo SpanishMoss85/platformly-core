@@ -1,122 +1,66 @@
-import { authOptions } from './[...nextauth]/route';
-import { getServerSession } from 'next-auth'; // Keep this import for type and mocking its return
-import { NextRequest, NextResponse } from 'next/server'; // Keep these imports for types and value in this test file
-import { IncomingMessage, ServerResponse } from 'http'; // Keep for Node.js mock requests
-
-
-// Import the handler function you want to test
+// src/app/api/auth/auth.test.ts
+import { NextRequest } from 'next/server';
+import { Request } from 'node-fetch';
 import { POST as authRouteHandler } from './[...nextauth]/route';
+import nextAuthMock from '@/test/mocks/next-auth';
+import prismaClientMock from '@/test/mocks/prisma';
+import ratelimitMock from '@/test/mocks/upstash';
+import bcrypt from 'bcrypt';
+import { createUser } from '@/test/factories/user-factory';
 
+// Mock bcrypt separately to avoid actual hashing
+jest.mock('bcrypt', () => ({
+  compare: jest.fn().mockResolvedValue(true),
+}));
 
-// REMOVED: The jest.mock for 'next-auth' is removed from HERE.
-// It is handled globally in jest.setup.ts
-// REMOVED: Upstash and Redis mocks are in jest.setup.ts
+describe('Auth Route Handler', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
 
+    // Reset mock returns to defaults
+    nextAuthMock.setSession(null);
+    ratelimitMock.setLimitResult({ success: true, limit: 5, remaining: 4 });
+  });
 
-describe('Authentication', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  describe('POST handler', () => {
+    it('should successfully handle authentication with valid credentials', async () => {
+      // ARRANGE
+      // 1. Create mock user
+      const mockUser = createUser();
 
-    // You might need to reset global mock return values here if they vary per test
-    // Example: Resetting Prisma mock method return values
-    // const { PrismaClient } = require('@prisma/client'); // Require the *global mock* module
-    // const mockPrismaInstance = PrismaClient.mock.results[0]?.value; // Get the mock instance
-    // if (mockPrismaInstance?.user?.findUnique) {
-    //   mockPrismaInstance.user.findUnique.mockResolvedValue(null); // Default mock user not found
-    // }
-    // Similarly for Ratelimit or next-auth's getServerSession if you change their mock behavior
-  });
+      // 2. Setup Prisma mock to return our user
+      prismaClientMock.user.findUnique.mockResolvedValue(mockUser);
 
+      // 3. Create mock request using node-fetch Request
+      const mockRequest = new Request('http://localhost/api/auth/callback/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: mockUser.email, password: 'password123' }),
+      }) as unknown as NextRequest;
 
-  // Original tests that mock getServerSession (these should still work, using the global mock)
-  it('should successfully authenticate with valid credentials (via getServerSession mock)', async () => {
-    const mockSession = {
-      user: { id: 'test-user-id', name: 'Test User', email: 'test@example.com' },
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
-    // Mock getServerSession return value (using the global mock)
-    (getServerSession as jest.Mock).mockResolvedValue(mockSession);
+      // ACT
+      const response = await authRouteHandler(mockRequest);
 
-    // Create mock Node.js req/res (needed for this getServerSession signature)
-     const req = { url: '/api/auth/session', method: 'GET', headers: {}, cookies: {}, query: {} } as any;
-     const res = {} as ServerResponse;
+      // ASSERT
+      expect(response.status).toBe(200);
+      expect(nextAuthMock.mockHandler).toHaveBeenCalled();
+      expect(ratelimitMock.limitFn).toHaveBeenCalled();
+    });
 
-    // Call getServerSession (this calls the global mock)
-    const session = await getServerSession(req, res, authOptions);
+    it('should return 429 when rate limited', async () => {
+      // ARRANGE
+      ratelimitMock.setLimitResult({ success: false, limit: 5, remaining: 0 });
 
-    expect(getServerSession).toHaveBeenCalledWith(req, res, authOptions);
-    expect(session).toEqual(mockSession);
-  });
+      const mockRequest = new Request('http://localhost/api/auth/callback/credentials', {
+        method: 'POST',
+      }) as unknown as NextRequest;
 
-  it('should return null session with invalid credentials (via getServerSession mock)', async () => {
-    // Mock getServerSession return value (using the global mock)
-    (getServerSession as jest.Mock).mockResolvedValue(null);
+      // ACT
+      const response = await authRouteHandler(mockRequest);
 
-    // Create mock Node.js req/res
-     const req = { url: '/api/auth/session', method: 'GET', headers: {}, cookies: {}, query: {} } as any;
-     const res = {} as ServerResponse;
-
-    // Call getServerSession (this calls the global mock)
-    const session = await getServerSession(req, res, authOptions);
-
-    expect(getServerSession).toHaveBeenCalledWith(req, res, authOptions);
-    expect(session).toBeNull();
-  });
-
-
-  // Example of testing the actual API route handler
-  it('should handle a POST request to the auth route', async () => {
-    // Create a mock NextRequest that simulates an incoming request
-    const mockRequest = {
-      method: 'POST',
-      headers: new Headers({ 'content-type': 'application/json' }), // Use global Headers mock
-      json: jest.fn().mockResolvedValue({ username: 'test', password: 'password' }), // Mock request body
-      url: 'http://localhost/api/auth/callback/credentials',
-      cookies: {
-        get: jest.fn((name) => {
-          if (name === 'next-auth.csrf-token') return { value: 'mock-csrf-token' };
-          return undefined;
-        }),
-      },
-    } as unknown as NextRequest; // Keep type assertion for type safety in this file
-
-    // Interact with global mocks to set test-specific behavior
-    // Example: Mock Prisma findUnique return value for this test scenario
-    const { PrismaClient } = require('@prisma/client'); // Require the *global mock* module
-    const mockPrismaInstance = PrismaClient.mock.results[0]?.value; // Get the mock instance
-    if (mockPrismaInstance?.user?.findUnique) {
-      mockPrismaInstance.user.findUnique.mockResolvedValue({
-          id: 'mock-user-id', name: 'Mock User', email: 'mock@example.com', password: 'hashed-password',
-      });
-    }
-    // Mock bcrypt.compare if your credentials provider uses it directly in route.ts
-    const bcrypt = require('bcrypt'); // Require the real bcrypt module
-    if (bcrypt?.compare) {
-        (bcrypt.compare as jest.Mock).mockResolvedValue(true); // Mock bcrypt.compare
-    }
-
-
-    // Example: Mock Ratelimit.limit outcome for this test scenario
-    const { Ratelimit } = require('@upstash/ratelimit'); // Require the *global mock* module
-    const mockRatelimitInstance = Ratelimit.mock.results[0]?.value; // Get the mock instance
-    if (mockRatelimitInstance?.limit) {
-      // Default is success: true in jest.setup.ts. Override if needed for this test.
-      // mockRatelimitInstance.limit.mockResolvedValue({ success: false, limit: 5, remaining: 0, pending: Promise.resolve(undefined), reset: Date.now() + 60000 });
-    }
-
-
-    // Call the route handler function with the mock request
-    const response = await authRouteHandler(mockRequest);
-
-    // Assert the response
-    expect(response).toBeInstanceOf(NextResponse); // Keep type assertion for type safety
-    // Example assertions for a successful login scenario:
-    // expect(response.status).toBe(200);
-    // If the handler returns the session data in the response body:
-    // const responseBody = await response.json();
-    // expect(responseBody).toHaveProperty('user');
-
-    // Add more tests for different scenarios (e.g., user not found, wrong password, rate limited)
-  });
-
+      // ASSERT
+      expect(response.status).toBe(429);
+      expect(await response.text()).toBe('Too many requests');
+    });
+  });
 });
