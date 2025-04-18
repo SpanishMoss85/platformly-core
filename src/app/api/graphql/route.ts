@@ -1,26 +1,38 @@
 import { ApolloServer } from '@apollo/server';
-import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { gql } from 'graphql-tag';
-import { getServerSession } from "next-auth/next";
-import { PrismaClient, Prisma } from "@/generated/prisma/client";
-
+import { getServerSession } from 'next-auth/next';
+import { PrismaClient, Prisma } from '@/generated/prisma/client';
 import { z } from 'zod';
-
 import { getAuthorizedLaunchUrl } from '@/services/appLaunch';
-
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { NextRequest, NextResponse } from 'next/server';
-import { Session } from "next-auth";
 
 const prisma = new PrismaClient();
 
+// Configure rate limiting
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  limiter: Ratelimit.slidingWindow(5, '1 m'),
   analytics: true,
-  prefix: "@upstash/ratelimit",
+  prefix: '@upstash/ratelimit',
 });
+
+// Properly define the Apollo response types
+interface GraphQLResponse {
+  body: {
+    kind: string;
+    singleResult: {
+      data?: Record<string, any>;
+      errors?: Array<{
+        message: string;
+        locations?: Array<{ line: number; column: number }>;
+        path?: Array<string | number>;
+        extensions?: Record<string, any>;
+      }>;
+    };
+  };
+}
 
 // Define the GraphQL schema
 const typeDefs = gql`
@@ -81,13 +93,13 @@ const resolvers = {
   Query: {
     users: async (_: any, __: any, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.user.findMany();
     },
     user: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.user.findUnique({
         where: {
@@ -95,15 +107,15 @@ const resolvers = {
         },
       });
     },
-    organizations: async (context: any) => {
+    organizations: async (_: any, __: any, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.organization.findMany();
     },
     organization: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.organization.findUnique({
         where: {
@@ -113,7 +125,7 @@ const resolvers = {
     },
     myOrganization: async (_: any, __: any, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
 
       const user = await prisma.user.findUnique({
@@ -123,7 +135,7 @@ const resolvers = {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        throw new Error('User not found');
       }
 
       return prisma.organization.findUnique({
@@ -132,15 +144,15 @@ const resolvers = {
         },
       });
     },
-    roles: async (context: any) => {
+    roles: async (_: any, __: any, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.role.findMany();
     },
     role: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return prisma.role.findUnique({
         where: {
@@ -150,24 +162,26 @@ const resolvers = {
     },
     applications: async (_: any, __: any, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
-      const applications = await prisma.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM applications WHERE enabled = TRUE`
-      );
+      const applications = await prisma.$queryRaw<any[]>(Prisma.sql`SELECT * FROM applications WHERE enabled = TRUE`);
       return applications;
     },
   },
   Mutation: {
-    createUser: (_: any, { name, email, organizationId, roleId }: { name: string; email: string; organizationId: string; roleId: string }, context: any) => {
+    createUser: (
+      _: any,
+      _args: { name: string; email: string; organizationId: string; roleId: string },
+      context: any
+    ) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return null;
     },
     updateUserProfile: async (_: any, args: { id: string; name: string; email: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
 
       const schema = z.object({
@@ -176,10 +190,10 @@ const resolvers = {
         email: z.string().email().optional(),
       });
 
-      const { id, name, email } = schema.parse(args);
+      const { id, name } = schema.parse(args);
 
       if (context.session.user.id !== id) {
-        throw new Error("Unauthorized: You can only update your own profile.");
+        throw new Error('Unauthorized: You can only update your own profile.');
       }
 
       return prisma.user.update({
@@ -193,7 +207,7 @@ const resolvers = {
     },
     updateOrganization: async (_: any, args: { id: string; name: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
 
       const schema = z.object({
@@ -210,11 +224,11 @@ const resolvers = {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        throw new Error('User not found');
       }
 
       if (user.orgId !== id) {
-        throw new Error("Unauthorized: You can only update your own organization.");
+        throw new Error('Unauthorized: You can only update your own organization.');
       }
 
       return prisma.organization.update({
@@ -226,45 +240,45 @@ const resolvers = {
         },
       });
     },
-    deleteUser: (_: any, { id }: { id: string }, context: any) => {
+    deleteUser: (_: any, _id: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return false;
     },
-    createOrganization: (_: any, { name }: { name: string }, context: any) => {
+    createOrganization: (_: any, _params: { name: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return null;
     },
-    deleteOrganization: (_: any, { id }: { id: string }, context: any) => {
+    deleteOrganization: (_: any, _id: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return false;
     },
-    createRole: (_: any, { name }: { name: string }, context: any) => {
+    createRole: (_: any, _params: { name: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return null;
     },
-    updateRole: async (_: any, { id, name }: { id: string; name: string }, context: any) => {
+    updateRole: async (_: any, _params: { id: string; name: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return null;
     },
-    deleteRole: (_: any, { id }: { id: string }, context: any) => {
+    deleteRole: (_: any, _id: { id: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
       return false;
     },
     getAuthorizedLaunchUrl: async (_: any, { applicationId }: { applicationId: string }, context: any) => {
       if (!context.session?.user) {
-        throw new Error("Unauthorized");
+        throw new Error('Unauthorized');
       }
 
       const userId = context.session.user.id;
@@ -326,101 +340,143 @@ const resolvers = {
   },
 };
 
+// Create Apollo Server instance
 const server = new ApolloServer({
   typeDefs,
   resolvers,
 });
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-  const { success, pending, limit, reset, remaining } = await ratelimit.limit(ip);
+// Helper function to create rate limit headers
+const createRateLimitHeaders = (limit: number, remaining: number, reset: number): Record<string, string> => {
+  return {
+    'Content-Type': 'application/json',
+    'X-RateLimit-Limit': limit.toString(),
+    'X-RateLimit-Remaining': remaining.toString(),
+    'X-RateLimit-Reset': reset.toString(),
+  };
+};
 
-  if (!success) {
-    return new NextResponse(
-      JSON.stringify({ message: "Too many requests" }),
-      {
+// Helper function to handle rate limiting
+const checkRateLimit = async (req: NextRequest) => {
+  const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  const result = await ratelimit.limit(ip);
+
+  if (!result.success) {
+    return {
+      isLimited: true,
+      response: new NextResponse(JSON.stringify({ message: 'Too many requests' }), {
         status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "X-RateLimit-Limit": limit.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-          "X-RateLimit-Reset": reset.toString(),
-        },
-      }
-    );
+        headers: createRateLimitHeaders(result.limit, result.remaining, result.reset),
+      }),
+      rateLimit: result,
+    };
+  }
+
+  return { isLimited: false, rateLimit: result };
+};
+
+// GET route handler
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Check rate limit
+  const rateLimitResult = await checkRateLimit(req);
+  if (rateLimitResult.isLimited) {
+    return rateLimitResult.response as NextResponse;
   }
 
   try {
     const session = await getServerSession();
     const body = await req.text();
 
-    const { data, errors } = await server.executeOperation({
-      query: body,
-      contextValue: { session: session },
-    });
+    // Execute GraphQL operation
+    const response = await server.executeOperation(
+      {
+        query: body,
+        variables: {},
+      },
+      {
+        contextValue: { session },
+      }
+    );
 
-    if (errors) {
-      console.error('GraphQL Errors:', errors);
+    // Parse the response
+    const responseData =
+      response.body.kind === 'single'
+        ? {
+            data: response.body.singleResult.data,
+            errors: response.body.singleResult.errors,
+          }
+        : { errors: [{ message: 'Unexpected response format' }] };
+
+    // Log errors if any
+    if (responseData.errors) {
+      console.error('GraphQL Errors:', responseData.errors);
     }
 
-    const response = new NextResponse(JSON.stringify({ data, errors }), {
+    // Return the response
+    return new NextResponse(JSON.stringify(responseData), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "X-RateLimit-Limit": limit.toString(),
-        "X-RateLimit-Remaining": remaining.toString(),
-        "X-RateLimit-Reset": reset.toString(),
-      },
+      headers: createRateLimitHeaders(
+        rateLimitResult.rateLimit.limit,
+        rateLimitResult.rateLimit.remaining,
+        rateLimitResult.rateLimit.reset
+      ),
     });
-
-    return response;
   } catch (error: any) {
-    console.error("Error in route handler:", error);
-    return new NextResponse(JSON.stringify({ message: "Internal Server Error" }), { status: 500 });
+    console.error('Error in route handler:', error);
+    return new NextResponse(JSON.stringify({ message: 'Internal Server Error', error: error.message }), {
+      status: 500,
+    });
   }
 }
 
+// POST route handler
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-  const { success, pending, limit, reset, remaining } = await ratelimit.limit(ip);
-
-  if (!success) {
-    return new NextResponse(
-      JSON.stringify({ message: "Too many requests" }),
-      {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "X-RateLimit-Limit": limit.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-          "X-RateLimit-Reset": reset.toString(),
-        },
-      }
-    );
+  // Check rate limit
+  const rateLimitResult = await checkRateLimit(req);
+  if (rateLimitResult.isLimited) {
+    return rateLimitResult.response as NextResponse;
   }
 
   try {
     const session = await getServerSession();
-    const body = await req.text();
+    const body = await req.json().catch(() => req.text());
 
-    const headers = {
-      "Content-Type": "application/json",
-      "X-RateLimit-Limit": limit.toString(),
-      "X-RateLimit-Remaining": remaining.toString(),
-      "X-RateLimit-Reset": reset.toString(),
-    };
+    // Prepare GraphQL query
+    const query = typeof body === 'string' ? body : JSON.stringify(body);
 
-    const graphqlResponse = await server.executeOperation({
-      query: body,
-      contextValue: { session: session ?? null },
-    });
+    // Execute GraphQL operation
+    const response = await server.executeOperation(
+      {
+        query,
+        variables: {},
+      },
+      {
+        contextValue: { session: session ?? null },
+      }
+    );
 
-    return new NextResponse(JSON.stringify(graphqlResponse), {
+    // Parse the response
+    const responseData =
+      response.body.kind === 'single'
+        ? {
+            data: response.body.singleResult.data,
+            errors: response.body.singleResult.errors,
+          }
+        : { errors: [{ message: 'Unexpected response format' }] };
+
+    // Return the response
+    return new NextResponse(JSON.stringify(responseData), {
       status: 200,
-      headers,
+      headers: createRateLimitHeaders(
+        rateLimitResult.rateLimit.limit,
+        rateLimitResult.rateLimit.remaining,
+        rateLimitResult.rateLimit.reset
+      ),
     });
   } catch (error: any) {
-    console.error("Error in POST handler:", error);
-    return new NextResponse(JSON.stringify({ message: "Internal Server Error" }), { status: 500 });
+    console.error('Error in POST handler:', error);
+    return new NextResponse(JSON.stringify({ message: 'Internal Server Error', error: error.message }), {
+      status: 500,
+    });
   }
 }
