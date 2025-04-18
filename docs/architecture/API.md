@@ -19,7 +19,7 @@ This document summarizes the API endpoints for the application.
     *   `GET/:id`: Get a specific user by ID.
     *   `PUT/:id`: Update a specific user by ID.
     *   `DELETE/:id`: Delete a specific user by ID.
-*   `/api/organizations`: Handles organization-related operations.
+*   `/api/orgs`: Handles organization-related operations.
     *   `POST`: Create a new organization.
     *   `GET`: Get a list of organizations.
     *   `GET/:id`: Get a specific organization by ID.
@@ -31,13 +31,13 @@ This document summarizes the API endpoints for the application.
     *   `GET/:id`: Get a specific role by ID.
     *   `PUT/:id`: Update a specific role by ID.
     *   `DELETE/:id`: Delete a specific role by ID.
-*   `/api/permissions`: Handles permission-related operations.
+*   `/api/perms`: Handles permission-related operations.
     *   `POST`: Create a new permission.
     *   `GET`: Get a list of permissions.
     *   `GET/:id`: Get a specific permission by ID.
     *   `PUT/:id`: Update a specific permission by ID.
     *   `DELETE/:id`: Delete a specific permission by ID.
-*   `/api/subscriptions`: Handles subscription-related operations.
+*   `/api/subs`: Handles subscription-related operations.
     *   `POST`: Create a new subscription.
     *   `GET`: Get a list of subscriptions.
     *   `GET/:id`: Get a specific subscription by ID.
@@ -46,6 +46,6 @@ This document summarizes the API endpoints for the application.
     `/api/apps`: Handles application-related operations.
     *   `POST`: Create a new application.
     *   `GET`: Get a list of applications.
-    * `GET/:id`: Get a specific application by ID.
+    *   `GET/:id`: Get a specific application by ID.
     *   `PUT/:id`: Update a specific application by ID.
     *   `DELETE/:id`: Delete a specific application by ID.
