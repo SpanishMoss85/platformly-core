@@ -48,15 +48,39 @@ model Organization {
 }
 
 model Role {
-  id        String       @id @default(uuid())
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  name      String
-  users     User[]
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id])
+  id          String           @id @default(uuid())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  name        String
+  users       User[]
+  orgId       String
+  permissions RolePermission[]
+  org         Organization     @relation(fields: [orgId], references: [id])
 
   @@map("roles")
+}
+
+model Permission {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String   @unique // e.g., "user:read", "admin:manage_users"
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model Application {

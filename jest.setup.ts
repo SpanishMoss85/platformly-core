@@ -73,19 +73,6 @@ jest.mock('@upstash/redis', () => ({
   Redis: { fromEnv: jest.fn(() => ({ mget: jest.fn().mockResolvedValue([]) })) },
 }));
 
-// GLOBAL MOCK: Mock PrismaClient
-jest.mock('@prisma/client', () => {
-  const mockPrismaClientInstance = {
-    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
-    account: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
-    session: { create: jest.fn(), update: jest.fn(), delete: jest.fn() },
-    verificationToken: { create: jest.fn(), findUnique: jest.fn(), delete: jest.fn() },
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
-  };
-  const MockPrismaClientConstructor = jest.fn(() => mockPrismaClientInstance);
-  return { default: MockPrismaClientConstructor, PrismaClient: MockPrismaClientConstructor };
-});
 
 // NEW GLOBAL MOCK: Mock the 'next-auth' module
 // Moved from auth.test.ts to ensure it's available globally and early

@@ -1,8 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Platformly Core
 
-## Getting Started
+This repository contains the core backend and frontend services for the Platformly application, built using the Next.js framework. It follows a modular :ArchitecturalPattern designed for scalability and maintainability.
 
-First, run the development server:
+## SAPPO Context
+
+This documentation serves as essential :ProjectDocumentation and :ConfigurationGuidance, crucial for successful :Onboarding of new developers and enhancing the overall :DeveloperExperience.
+
+*   **:ProjectContext**: This is a Next.js application, leveraging its full-stack capabilities for both API routes and server-rendered/client-side pages.
+*   **:TechnologyVersion**: Key technologies include Next.js (version specified in `package.json`), Node.js (version recommended in documentation or `.nvmrc`), and Prisma for database interaction.
+*   **:EnvironmentContext**: The application is designed to run in various environments (development, staging, production), requiring specific environment variables detailed in the `.env.example` file.
+
+## Setup Instructions
+
+To get the project up and running locally, follow these steps:
+
+1.  **Prerequisites**: Ensure you have Node.js (use the version specified in `.nvmrc` if present), npm/yarn/pnpm/bun, and a PostgreSQL database server installed and running.
+2.  **Clone the repository**:
+    ```bash
+    git clone <repository_url>
+    cd platformly-core
+    ```
+3.  **Install dependencies**:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    # or
+    bun install
+    ```
+4.  **Environment Variables**: Create a `.env` file in the root directory by copying the `.env.example` file.
+    ```bash
+    cp .env.example .env
+    ```
+    Edit the `.env` file and fill in the required values for your local environment.
+5.  **Database Setup**: Apply the database migrations using Prisma.
+    ```bash
+    npx prisma migrate dev --name init
+    ```
+    If you need to seed the database with initial data:
+    ```bash
+    npx prisma db seed
+    ```
+
+## Running the Application
+
+To run the application in development mode:
 
 ```bash
 npm run dev
@@ -14,23 +58,29 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The application will be accessible at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing Strategy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Proper setup as described above is essential for running the project's test suite. The project employs a dual testing strategy:
+
+*   **Cumulative Testing**: All tests are run together to ensure system-wide stability and catch regressions as new features are added or changes are made.
+*   **Recursive Testing**: (If applicable to specific components, e.g., tree traversal algorithms) Dedicated tests are included to verify recursive functions, covering base cases, recursive steps, and edge cases to prevent potential :Problems like :StackOverflowError or incorrect logic in recursive calls.
+
+Running the full test suite:
+
+```bash
+npm test
+# or
+yarn test
+# or
+pnpm test
+# or
+bun test
+```
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*   [Next.js Documentation](https://nextjs.org/docs)
+*   [Prisma Documentation](https://www.prisma.io/docs/)
+*   [NextAuth.js Documentation](https://next-auth.js.org/documentation)

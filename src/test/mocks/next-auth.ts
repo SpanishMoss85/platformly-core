@@ -26,6 +26,8 @@ const nextAuthMock = {
   mockHandler,
   mockGetServerSession,
   setSession,
+  jwt: jest.fn(),
+  session: jest.fn(),
 };
 
 // This is the critical part - we need to mock the module correctly
