@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  firstName     String?
+  lastName      String?
+  password      String
+  roleId        String
+  role          Role         @relation(fields: [roleId], references: [id])
+  orgId         String
+  org           Organization @relation(fields: [orgId], references: [id])
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Organization {
+  id                      String                    @id @default(uuid())
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  name                    String                    @unique
+  users                   User[]
+  roles                   Role[]
+  OrganizationApplication OrganizationApplication[]
+  Subscription            Subscription[]
+
+  @@map("organizations")
+}
+
+model Role {
+  id        String       @id @default(uuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  name      String
+  users     User[]
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id])
+
+  @@map("roles")
+}
+
+model Application {
+  id            String                    @id @default(uuid())
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  name          String
+  // Many-to-many relationship with Organization
+  organizations OrganizationApplication[]
+
+  @@map("applications")
+}
+
+model OrganizationApplication {
+  orgId         String
+  organization  Organization @relation(fields: [orgId], references: [id])
+  applicationId String
+  application   Application  @relation(fields: [applicationId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@id([orgId, applicationId])
+  @@map("organizations_applications")
+}
+
+model Subscription {
+  id                   String       @id @default(uuid())
+  stripeSubscriptionId String       @unique
+  status               String
+  orgId                String
+  organization         Organization @relation(fields: [orgId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}

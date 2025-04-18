@@ -4,4 +4,4 @@ This directory contains records of significant architectural decisions made thro
 
 Using ADRs helps maintain a clear history of the system's evolution and the reasoning behind key design choices.
 
-*See [adr-template.md](./adr-template.md) (to be created) for the standard format.*
+_See [adr-template.md](./adr-template.md) (to be created) for the standard format._
