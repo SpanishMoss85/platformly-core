@@ -1,3 +1,4 @@
+// src/test/mocks/upstash.ts
 interface RateLimitResult {
   success: boolean;
   limit: number;
@@ -24,10 +25,14 @@ const ratelimitMock = new RatelimitMock();
 
 // Mock the Ratelimit class and its static methods
 jest.mock('@upstash/ratelimit', () => {
+  // Define the mock constructor with proper typing
   const MockRatelimit = jest.fn(() => ({
     limit: ratelimitMock.limitFn,
-  }));
+  })) as jest.Mock & {
+    slidingWindow: jest.Mock; // Add the slidingWindow property to the type
+  };
 
+  // Now TypeScript knows MockRatelimit has a slidingWindow property
   MockRatelimit.slidingWindow = jest.fn().mockImplementation((limit, duration) => ({
     limit,
     duration,

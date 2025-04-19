@@ -24,6 +24,8 @@
     "helmet": "^8.1.0",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
+    "logger": "^0.0.1",
+    "mermaid": "^11.6.0",
     "morgan": "~1.9.1",
     "next-auth": "^4.24.11",
     "nodemailer": "^6.10.1",

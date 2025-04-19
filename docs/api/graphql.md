@@ -1,4 +1,44 @@
-# GraphQL API Documentation (`/api/graphql`)
+# GraphQL API Object Diagram
+
+## Type Relationships
+```mermaid
+graph TD
+    User[User] -- belongs to --> Org[Organization]
+    User -- has --> Role[Role]
+    Org -- has many --> User
+    Role -- assigned to many --> User
+    App[Application] -- accessible by --> User
+```
+
+## Object Types Overview
+| Type | Fields | Relationships |
+|------|--------|---------------|
+| User | id, name, email | belongs to Organization, has Role |
+| Organization | id, name | has many Users |
+| Role | id, name | assigned to many Users |
+| Application | id, name, enabled | accessible by Users |
+
+## API Operations Map
+```mermaid
+graph LR
+    Client[Client] -- Queries --> Q[Queries]
+    Client -- Mutations --> M[Mutations]
+
+    Q -- "users, user(id)" --> User[User]
+    Q -- "organizations, organization(id), myOrganization" --> Org[Organization]
+    Q -- "roles, role(id)" --> Role[Role]
+    Q -- "applications" --> App[Application]
+
+    M -- "createUser, updateUser, deleteUser, updateUserProfile" --> User
+    M -- "createOrganization, updateOrganization, deleteOrganization" --> Org
+    M -- "createRole, updateRole, deleteRole" --> Role
+    M -- "getAuthorizedLaunchUrl" --> App
+```
+
+## Authentication & Rate Limiting
+- 🔒 **All operations require authentication** via NextAuth
+- ⏱️ **Rate limit**: 5 requests per minute per IP
+- 🔄 Rate limit headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset# GraphQL API Documentation (`/api/graphql`)
 
 This document provides details about the GraphQL API endpoint available at `/api/graphql`. It covers the schema, authentication, rate limiting, and relevant architectural concepts.
 

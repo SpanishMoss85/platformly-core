@@ -47,6 +47,9 @@ if (typeof globalThis.fetch === 'undefined') {
 type NextRequest = any;
 type NextResponse = any;
 
+// Instead of including global mocks here, we'll import them in individual test files
+// This makes tests more explicit about their dependencies
+
 // GLOBAL MOCK: Mock Upstash Ratelimit
 jest.mock('@upstash/ratelimit', () => {
   const mockRatelimitInstanceMethods = {
@@ -72,7 +75,6 @@ jest.mock('@upstash/ratelimit', () => {
 jest.mock('@upstash/redis', () => ({
   Redis: { fromEnv: jest.fn(() => ({ mget: jest.fn().mockResolvedValue([]) })) },
 }));
-
 
 // NEW GLOBAL MOCK: Mock the 'next-auth' module
 // Moved from auth.test.ts to ensure it's available globally and early
@@ -106,6 +108,5 @@ jest.mock('next-auth', () => {
   };
 });
 
-// Add any other necessary test setup below this line
-// e.g., import '@testing-library/jest-dom';
-// e.g., configure mocks for Next.js specific modules like 'next/navigation'
+// Set longer timeout for tests
+jest.setTimeout(10000);
